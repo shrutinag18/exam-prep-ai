@@ -1,7 +1,7 @@
 from pypdf import PdfReader
 from docx import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
+from pptx import Presentation
 
 def load_pdf(file):
     reader = PdfReader(file)
@@ -32,10 +32,12 @@ def load_document(file):
 
     elif file.name.endswith(".docx"):
         return load_docx(file)
+    
+    elif file.name.endswith(".pptx"):
+        return load_pptx(file)
 
     else:
-        raise ValueError("Unsupported file format")
-
+        raise ValueError(f"Unsupported file format: {file.name}")
 
 def split_text(text, chunk_size=500, chunk_overlap=50):
 
@@ -49,3 +51,18 @@ def split_text(text, chunk_size=500, chunk_overlap=50):
     print(f"Split into {len(chunks)} chunks")
 
     return chunks
+def load_pptx(file):
+
+    presentation = Presentation(file)
+
+    text = ""
+
+    for slide in presentation.slides:
+
+        for shape in slide.shapes:
+
+            if hasattr(shape, "text"):
+
+                text += shape.text + "\n"
+
+    return text

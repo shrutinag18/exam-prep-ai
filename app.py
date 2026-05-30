@@ -1,8 +1,15 @@
 import streamlit as st
+import urllib.parse
+from src.topic_extractor import extract_topics
+from src.video_recommender import recommend_videos
 from src.document_loader import load_document, split_text
 from src.embeddings import create_vector_store
 from src.rag_pipeline import create_qa_chain
-from src.question_generator import generate_questions, generate_mock_test, generate_notes
+from src.question_generator import (
+    generate_questions,
+    generate_mock_test,
+    generate_notes,
+)
 
 st.set_page_config(page_title="AI Exam Prep Assistant", layout="wide")
 st.title("🎓 AI Exam Prep Assistant")
@@ -20,7 +27,7 @@ with st.sidebar:
     st.header("📄 Upload Documents")
     uploaded_files = st.file_uploader(
         "Upload PDF files",
-        type=["pdf","docx"],
+        type=["pdf","docx","pptx"],
         accept_multiple_files=True
     )
 
@@ -28,17 +35,20 @@ with st.sidebar:
         if st.button("⚙️ Process Documents", use_container_width=True):
             with st.spinner("Reading and indexing your documents..."):
                 all_chunks = []
+                all_text = ""
                 for file in uploaded_files:
                     text = load_document(file)
+                    all_text += text + "\n"
                     chunks = split_text(text)
                     all_chunks.extend(chunks)
 
                 st.session_state.vector_store = create_vector_store(all_chunks)
+                st.session_state.topics = extract_topics(all_text)
                 st.success(f"✅ Processed {len(uploaded_files)} document(s) — {len(all_chunks)} chunks indexed!")
 
     st.divider()
     st.markdown("### How to use")
-    st.markdown("1. Upload your PDF notes or syllabus")
+    st.markdown("1. Upload PDF, DOCX or PPTX files")
     st.markdown("2. Click Process Documents")
     st.markdown("3. Use any tab to interact with your material")
 
@@ -46,7 +56,7 @@ with st.sidebar:
 if st.session_state.vector_store is None:
     st.info("👈 Upload and process your documents from the sidebar to get started!")
 else:
-    tab1, tab2, tab3, tab4 = st.tabs(["💬 Ask Questions", "📝 Generate Exam Questions", "📋 Mock Test", "📒 Generate Notes"])
+    tab1, tab2, tab3, tab4,tab5 = st.tabs(["💬 Ask Questions", "📝 Generate Exam Questions", "📋 Mock Test", "📒 Generate Notes","🎥 Video Recommendations"])
 
     # Tab 1 - Q&A
     with tab1:
@@ -150,3 +160,25 @@ else:
                     mime="text/plain",
                     use_container_width=True
                 )
+
+    # Tab 5 - Video Recommendations
+    with tab5:
+        st.subheader("🎥 Recommended Learning Videos")
+
+        if "topics" not in st.session_state:
+            st.info("Upload and process documents first.")
+        else:
+            for topic in st.session_state.topics:
+                st.markdown(f"### 📚 {topic}")
+
+                queries = recommend_videos(topic)
+
+                for query in queries:
+                    youtube_url = (
+                        "https://www.youtube.com/results?search_query="
+                        + urllib.parse.quote(query)
+                    )
+
+                    st.markdown(f"▶ [{query}]({youtube_url})")
+
+                st.divider()
