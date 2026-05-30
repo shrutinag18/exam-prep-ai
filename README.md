@@ -9,6 +9,8 @@
 An AI-powered exam preparation assistant that lets you upload your notes or syllabus as PDF and instantly get predicted exam questions, detailed answers and full mock tests — all generated from YOUR own material using RAG (Retrieval Augmented Generation).
 
 ---
+## 🚀 Live Demo
+👉 [Try it here](https://revisionai.streamlit.app/)
 
 ## Screenshots
 
@@ -25,6 +27,7 @@ An AI-powered exam preparation assistant that lets you upload your notes or syll
 ![Mock Test](screenshots/mock-test.png)
 
 ---
+
 
 ## What It Does
 
