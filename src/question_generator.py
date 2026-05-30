@@ -81,3 +81,46 @@ def generate_mock_test(vector_store, num_questions=10):
 
     response = llm.invoke(prompt)
     return response.content
+def generate_notes(vector_store):
+    llm = ChatGroq(
+        api_key=os.getenv("GROQ_API_KEY"),
+        model_name="llama-3.3-70b-versatile",
+        temperature=0.3
+    )
+
+    docs = vector_store.similarity_search("main concepts topics summary", k=8)
+    context = "\n".join([doc.page_content for doc in docs])
+
+    prompt = f"""
+    Based on the following study material, create clean and well structured study notes.
+    
+    Study Material:
+    {context}
+    
+    Format the notes like this:
+    
+    ## 📚 Study Notes
+    
+    ### Topic 1: [Topic Name]
+    - Key point 1
+    - Key point 2
+    - Key point 3
+    
+    ### Topic 2: [Topic Name]
+    - Key point 1
+    - Key point 2
+    
+    ### Key Definitions
+    - **Term 1**: Definition
+    - **Term 2**: Definition
+    
+    ### Important Formulas / Concepts
+    - Formula or concept 1
+    - Formula or concept 2
+    
+    ### Quick Summary
+    2-3 sentences summarizing the entire material.
+    """
+
+    response = llm.invoke(prompt)
+    return response.content

@@ -2,7 +2,7 @@ import streamlit as st
 from src.document_loader import load_pdf, split_text
 from src.embeddings import create_vector_store
 from src.rag_pipeline import create_qa_chain
-from src.question_generator import generate_questions, generate_mock_test
+from src.question_generator import generate_questions, generate_mock_test, generate_notes
 
 st.set_page_config(page_title="AI Exam Prep Assistant", layout="wide")
 st.title("🎓 AI Exam Prep Assistant")
@@ -25,7 +25,7 @@ with st.sidebar:
     )
 
     if uploaded_files:
-        if st.button("Process Documents"):
+        if st.button("⚙️ Process Documents", use_container_width=True):
             with st.spinner("Reading and indexing your documents..."):
                 all_chunks = []
                 for file in uploaded_files:
@@ -34,44 +34,52 @@ with st.sidebar:
                     all_chunks.extend(chunks)
 
                 st.session_state.vector_store = create_vector_store(all_chunks)
-                st.success(f"Processed {len(uploaded_files)} document(s) — {len(all_chunks)} chunks indexed!")
+                st.success(f"✅ Processed {len(uploaded_files)} document(s) — {len(all_chunks)} chunks indexed!")
 
     st.divider()
     st.markdown("### How to use")
     st.markdown("1. Upload your PDF notes or syllabus")
     st.markdown("2. Click Process Documents")
-    st.markdown("3. Ask questions or generate exam questions")
+    st.markdown("3. Use any tab to interact with your material")
 
 # Main content
 if st.session_state.vector_store is None:
-    st.info("Upload and process your documents from the sidebar to get started!")
+    st.info("👈 Upload and process your documents from the sidebar to get started!")
 else:
-    tab1, tab2, tab3 = st.tabs(["💬 Ask Questions", "📝 Generate Exam Questions", "📋 Mock Test"])
+    tab1, tab2, tab3, tab4 = st.tabs(["💬 Ask Questions", "📝 Generate Exam Questions", "📋 Mock Test", "📒 Generate Notes"])
 
     # Tab 1 - Q&A
     with tab1:
         st.subheader("Ask anything from your documents")
-        question = st.text_input("Enter your question:")
+        st.markdown("Type your question below and click **Get Answer**")
 
-        if question:
-            with st.spinner("Finding answer..."):
+        question = st.text_input("Enter your question:", placeholder="e.g. What is backpropagation?")
+        ask_button = st.button("🔍 Get Answer", use_container_width=True)
+
+        if ask_button and question:
+            with st.spinner("Finding answer from your documents..."):
                 qa_chain = create_qa_chain(st.session_state.vector_store)
                 answer = qa_chain.invoke(question)
-
                 st.session_state.chat_history.append({
                     "question": question,
                     "answer": answer
                 })
 
+        if ask_button and not question:
+            st.warning("Please enter a question first!")
+
         if st.session_state.chat_history:
+            st.divider()
+            st.markdown("### Chat History")
             for chat in reversed(st.session_state.chat_history):
-                st.markdown(f"**Q: {chat['question']}**")
-                st.markdown(f"A: {chat['answer']}")
+                st.markdown(f"**🙋 Q: {chat['question']}**")
+                st.markdown(f"🤖 **A:** {chat['answer']}")
                 st.divider()
 
     # Tab 2 - Question Generator
     with tab2:
         st.subheader("Generate Predicted Exam Questions")
+        st.markdown("Select your preferences and click **Generate Questions**")
 
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -81,33 +89,64 @@ else:
         with col3:
             num_questions = st.slider("Number of Questions", 3, 15, 5)
 
-        if st.button("Generate Questions"):
-            with st.spinner("Generating exam questions..."):
+        if st.button("📝 Generate Questions", use_container_width=True):
+            with st.spinner("Generating exam questions from your material..."):
                 questions = generate_questions(
                     st.session_state.vector_store,
                     topic=topic,
                     difficulty=difficulty,
                     num_questions=num_questions
                 )
+                st.divider()
                 st.markdown(questions)
+
+                st.download_button(
+                    label="⬇️ Download Questions",
+                    data=questions,
+                    file_name="exam_questions.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
 
     # Tab 3 - Mock Test
     with tab3:
         st.subheader("Generate a Full Mock Test")
+        st.markdown("Get a complete exam with mixed difficulty questions and full answer key")
 
         num_mock = st.slider("Number of Questions", 5, 20, 10)
 
-        if st.button("Generate Mock Test"):
+        if st.button("📋 Generate Mock Test", use_container_width=True):
             with st.spinner("Creating your mock test..."):
                 mock_test = generate_mock_test(
                     st.session_state.vector_store,
                     num_questions=num_mock
                 )
+                st.divider()
                 st.markdown(mock_test)
 
                 st.download_button(
-                    label="Download Mock Test",
+                    label="⬇️ Download Mock Test",
                     data=mock_test,
                     file_name="mock_test.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True
+                )
+
+    # Tab 4 - Generate Notes
+    with tab4:
+        st.subheader("Generate Study Notes")
+        st.markdown("AI will read your uploaded material and create clean structured notes")
+
+        if st.button("📒 Generate Notes", use_container_width=True):
+            with st.spinner("Generating structured notes from your material..."):
+                notes = generate_notes(st.session_state.vector_store)
+                st.divider()
+                st.markdown(notes)
+
+                st.download_button(
+                    label="⬇️ Download Notes",
+                    data=notes,
+                    file_name="study_notes.txt",
+                    mime="text/plain",
+                    use_container_width=True
                 )
