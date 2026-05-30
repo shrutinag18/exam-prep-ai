@@ -1,5 +1,5 @@
 import streamlit as st
-from src.document_loader import load_pdf, split_text
+from src.document_loader import load_document, split_text
 from src.embeddings import create_vector_store
 from src.rag_pipeline import create_qa_chain
 from src.question_generator import generate_questions, generate_mock_test, generate_notes
@@ -20,7 +20,7 @@ with st.sidebar:
     st.header("📄 Upload Documents")
     uploaded_files = st.file_uploader(
         "Upload PDF files",
-        type=["pdf"],
+        type=["pdf","docx"],
         accept_multiple_files=True
     )
 
@@ -29,7 +29,7 @@ with st.sidebar:
             with st.spinner("Reading and indexing your documents..."):
                 all_chunks = []
                 for file in uploaded_files:
-                    text = load_pdf(file)
+                    text = load_document(file)
                     chunks = split_text(text)
                     all_chunks.extend(chunks)
 
